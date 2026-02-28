@@ -1,5 +1,8 @@
 {
-  "name": "phosphor-icons-vue-split",
+  "name": "@deathmaz/phosphor-icons-vue-split",
+  "publishConfig": {
+    "access": "public"
+  },
   "version": "0.1.0",
   "description": "Phosphor Icons for Vue 3 with per-weight components for optimal tree-shaking",
   "license": "MIT",
@@ -26,7 +29,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.check.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run typecheck && npm run lint && npm run test"
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "prepublishOnly": "npm run check && npm run build"
   },
   "peerDependencies": {
     "vue": ">=3.2.39"
