@@ -98,6 +98,27 @@ Any additional attributes are forwarded to the root `<svg>` element via `v-bind=
 <PhStarFill class="icon" data-testid="star" />
 ```
 
+## TypeScript
+
+All components are fully typed. A general `PhosphorIconComponent` type covers any icon, while weight-specific branded types let you constrain props to a single weight:
+
+```ts
+import type {
+  PhosphorIconComponent,
+  PhosphorThinIcon,
+  PhosphorRegularIcon,
+  PhosphorFillIcon,
+} from "@deathmaz/phosphor-icons-vue-split";
+
+// Accept any icon
+defineProps<{ icon: PhosphorIconComponent }>();
+
+// Accept only regular-weight icons
+defineProps<{ icon: PhosphorRegularIcon }>();
+```
+
+Available weight types: `PhosphorThinIcon`, `PhosphorLightIcon`, `PhosphorRegularIcon`, `PhosphorBoldIcon`, `PhosphorFillIcon`, `PhosphorDuotoneIcon`.
+
 ## Bundle size
 
 Each component contains only its weight's SVG path data. A typical component compiles to ~0.8 KB (gzipped), compared to ~4.4 KB per icon in the original library that bundles all weights.

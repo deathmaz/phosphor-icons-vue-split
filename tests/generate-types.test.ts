@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildTypeDefinitions,
+  detectWeight,
   parseExportNames,
 } from "../bin/generate-types.js";
 
@@ -50,20 +51,46 @@ describe("parseExportNames", () => {
   });
 });
 
+describe("detectWeight", () => {
+  it("detects each weight suffix", () => {
+    expect(detectWeight("PhHeartThin")).toBe("PhosphorThinIcon");
+    expect(detectWeight("PhHeartLight")).toBe("PhosphorLightIcon");
+    expect(detectWeight("PhHeartRegular")).toBe("PhosphorRegularIcon");
+    expect(detectWeight("PhHeartBold")).toBe("PhosphorBoldIcon");
+    expect(detectWeight("PhHeartFill")).toBe("PhosphorFillIcon");
+    expect(detectWeight("PhHeartDuotone")).toBe("PhosphorDuotoneIcon");
+  });
+
+  it("returns null for names without a weight suffix", () => {
+    expect(detectWeight("PhHeart")).toBeNull();
+    expect(detectWeight("SomeOtherComponent")).toBeNull();
+  });
+});
+
 describe("buildTypeDefinitions", () => {
-  it("generates correct d.ts content", () => {
+  it("generates correct d.ts content with weight-specific types", () => {
     const result = buildTypeDefinitions(["PhHeartRegular", "PhStarBold"]);
 
     expect(result).toContain('import { DefineComponent } from "vue"');
-    expect(result).toContain("type PhosphorIconComponent");
+    expect(result).toContain("export type PhosphorIconComponent");
     expect(result).toContain("size?: string | number");
     expect(result).toContain("color?: string");
     expect(result).toContain("mirrored?: boolean");
+    expect(result).toContain("export type PhosphorThinIcon");
+    expect(result).toContain("export type PhosphorRegularIcon");
+    expect(result).toContain("export type PhosphorBoldIcon");
     expect(result).toContain(
-      "export declare const PhHeartRegular: PhosphorIconComponent"
+      "export declare const PhHeartRegular: PhosphorRegularIcon"
     );
     expect(result).toContain(
-      "export declare const PhStarBold: PhosphorIconComponent"
+      "export declare const PhStarBold: PhosphorBoldIcon"
+    );
+  });
+
+  it("uses PhosphorIconComponent for names without a weight suffix", () => {
+    const result = buildTypeDefinitions(["PhHeart"]);
+    expect(result).toContain(
+      "export declare const PhHeart: PhosphorIconComponent"
     );
   });
 
@@ -72,16 +99,16 @@ describe("buildTypeDefinitions", () => {
     const result = buildTypeDefinitions(names);
     const exportLines = result
       .split("\n")
-      .filter((l) => l.startsWith("export declare"));
+      .filter((l) => l.startsWith("export declare const"));
     expect(exportLines).toHaveLength(3);
   });
 
   it("handles empty export list", () => {
     const result = buildTypeDefinitions([]);
-    expect(result).toContain("type PhosphorIconComponent");
+    expect(result).toContain("export type PhosphorIconComponent");
     const exportLines = result
       .split("\n")
-      .filter((l) => l.startsWith("export declare"));
+      .filter((l) => l.startsWith("export declare const"));
     expect(exportLines).toHaveLength(0);
   });
 });

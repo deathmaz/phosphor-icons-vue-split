@@ -1,6 +1,25 @@
 import fs from "node:fs";
 import path from "node:path";
 
+const WEIGHT_SUFFIXES = ["Thin", "Light", "Regular", "Bold", "Fill", "Duotone"] as const;
+
+type WeightTypeName =
+  | "PhosphorThinIcon"
+  | "PhosphorLightIcon"
+  | "PhosphorRegularIcon"
+  | "PhosphorBoldIcon"
+  | "PhosphorFillIcon"
+  | "PhosphorDuotoneIcon";
+
+export function detectWeight(name: string): WeightTypeName | null {
+  for (const suffix of WEIGHT_SUFFIXES) {
+    if (name.endsWith(suffix)) {
+      return `Phosphor${suffix}Icon` as WeightTypeName;
+    }
+  }
+  return null;
+}
+
 export function parseExportNames(jsContent: string): string[] {
   const exportMatch = jsContent.match(/export\s*\{([^}]+)\}/s);
   if (!exportMatch) {
@@ -20,17 +39,30 @@ export function parseExportNames(jsContent: string): string[] {
 }
 
 export function buildTypeDefinitions(exportNames: string[]): string {
+  const exports = exportNames.map((name) => {
+    const weightType = detectWeight(name);
+    const type = weightType ?? "PhosphorIconComponent";
+    return `export declare const ${name}: ${type};`;
+  });
+
   return `\
 /* GENERATED FILE */
 import { DefineComponent } from "vue";
 
-type PhosphorIconComponent = DefineComponent<{
+export type PhosphorIconComponent = DefineComponent<{
   size?: string | number;
   color?: string;
   mirrored?: boolean;
 }>;
 
-${exportNames.map((name) => `export declare const ${name}: PhosphorIconComponent;`).join("\n")}
+export type PhosphorThinIcon = PhosphorIconComponent & { readonly __weight: 'thin' };
+export type PhosphorLightIcon = PhosphorIconComponent & { readonly __weight: 'light' };
+export type PhosphorRegularIcon = PhosphorIconComponent & { readonly __weight: 'regular' };
+export type PhosphorBoldIcon = PhosphorIconComponent & { readonly __weight: 'bold' };
+export type PhosphorFillIcon = PhosphorIconComponent & { readonly __weight: 'fill' };
+export type PhosphorDuotoneIcon = PhosphorIconComponent & { readonly __weight: 'duotone' };
+
+${exports.join("\n")}
 `;
 }
 
