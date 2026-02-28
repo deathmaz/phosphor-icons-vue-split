@@ -1,4 +1,4 @@
-# phosphor-icons-vue-split
+# @deathmaz/phosphor-icons-vue-split
 
 Phosphor Icons for Vue 3 with **per-weight components** for optimal tree-shaking.
 
@@ -7,7 +7,7 @@ The original [`@phosphor-icons/vue`](https://github.com/phosphor-icons/vue) bund
 ## Installation
 
 ```bash
-npm install phosphor-icons-vue-split
+npm install @deathmaz/phosphor-icons-vue-split
 ```
 
 Requires Vue 3.2.39 or later as a peer dependency.
@@ -20,7 +20,7 @@ import {
   PhHorseRegular,
   PhHeartFill,
   PhCubeDuotone,
-} from "phosphor-icons-vue-split";
+} from "@deathmaz/phosphor-icons-vue-split";
 </script>
 
 <template>
@@ -64,7 +64,7 @@ Use Vue's `provide` to set defaults for all icons in a subtree, avoiding repetit
 ```vue
 <script lang="ts" setup>
 import { provide } from "vue";
-import { PhHouseRegular, PhGearRegular } from "phosphor-icons-vue-split";
+import { PhHouseRegular, PhGearRegular } from "@deathmaz/phosphor-icons-vue-split";
 
 provide("size", "24px");
 provide("color", "#1a1a1a");
