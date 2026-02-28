@@ -2,88 +2,40 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 
-const require = createRequire(import.meta.url);
+export const WEIGHTS = [
+  "thin",
+  "light",
+  "regular",
+  "bold",
+  "fill",
+  "duotone",
+] as const;
 
-// Resolve @phosphor-icons/core from node_modules
-// The main export resolves to dist/index.umd.js, so go up two levels to get package root
-const coreMainPath = require.resolve("@phosphor-icons/core");
-const coreDir = path.resolve(path.dirname(coreMainPath), "..");
-const ASSETS_PATH = path.join(coreDir, "assets");
-
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
-const COMPONENTS_PATH = path.join(__dirname, "../src/icons");
-const INDEX_PATH = path.join(__dirname, "../src/index.ts");
-
-const WEIGHTS = ["thin", "light", "regular", "bold", "fill", "duotone"] as const;
-
-if (!fs.existsSync(ASSETS_PATH)) {
-  console.error(
-    `FAIL: Could not find @phosphor-icons/core assets at ${ASSETS_PATH}`
-  );
-  process.exit(1);
-}
-
-// --- Step 1: Read all SVG files ---
-
-interface IconMappings {
+export interface IconMappings {
   [iconName: string]: { [weight: string]: string };
 }
 
-function readSvgContent(filePath: string): string {
-  return fs
-    .readFileSync(filePath, "utf-8")
-    .replace(/<svg[^>]*>/g, "")
-    .replace(/<\/svg>/g, "")
-    .trim();
-}
+// --- Pure functions ---
 
-function readAllIcons(): IconMappings {
-  const mappings: IconMappings = {};
-
-  for (const weight of WEIGHTS) {
-    const weightDir = path.join(ASSETS_PATH, weight);
-    if (!fs.existsSync(weightDir)) {
-      console.warn(`WARN: Missing weight directory: ${weight}`);
-      continue;
-    }
-
-    const files = fs.readdirSync(weightDir).filter((f) => f.endsWith(".svg"));
-
-    for (const file of files) {
-      let iconName: string;
-      if (weight === "regular") {
-        iconName = file.replace(".svg", "");
-      } else {
-        iconName = file.replace(".svg", "").replace(new RegExp(`-${weight}$`), "");
-      }
-
-      if (!mappings[iconName]) {
-        mappings[iconName] = {};
-      }
-
-      mappings[iconName][weight] = readSvgContent(path.join(weightDir, file));
-    }
-  }
-
-  return mappings;
-}
-
-// --- Step 2: Name conversion utilities ---
-
-function pascalize(str: string): string {
+export function pascalize(str: string): string {
   return str
     .split("-")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join("");
 }
 
-function capitalizeFirst(str: string): string {
+export function capitalizeFirst(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// --- Step 3: Generate per-weight Vue SFC ---
+export function stripSvgWrapper(svg: string): string {
+  return svg
+    .replace(/<svg[^>]*>/g, "")
+    .replace(/<\/svg>/g, "")
+    .trim();
+}
 
-function generateComponent(
+export function generateComponent(
   iconName: string,
   weight: string,
   svgContent: string
@@ -101,13 +53,13 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { computed, inject } from "vue";
+import { computed, inject, type PropType } from "vue";
 
-const props = defineProps<{
-  size?: string | number;
-  color?: string;
-  mirrored?: boolean;
-}>();
+const props = defineProps({
+  size: { type: [String, Number] as PropType<string | number> },
+  color: { type: String },
+  mirrored: { type: Boolean, default: undefined },
+})
 
 const contextSize = inject("size", "1em")
 const contextColor = inject("color", "currentColor")
@@ -138,18 +90,54 @@ const displayMirrored = computed(() =>
 `;
 }
 
-// --- Step 4: Write all components ---
+// --- I/O functions ---
 
-function generateAllComponents(mappings: IconMappings): string[] {
+export function readAllIcons(assetsPath: string): IconMappings {
+  const mappings: IconMappings = {};
+
+  for (const weight of WEIGHTS) {
+    const weightDir = path.join(assetsPath, weight);
+    if (!fs.existsSync(weightDir)) {
+      console.warn(`WARN: Missing weight directory: ${weight}`);
+      continue;
+    }
+
+    const files = fs.readdirSync(weightDir).filter((f) => f.endsWith(".svg"));
+
+    for (const file of files) {
+      let iconName: string;
+      if (weight === "regular") {
+        iconName = file.replace(".svg", "");
+      } else {
+        iconName = file
+          .replace(".svg", "")
+          .replace(new RegExp(`-${weight}$`), "");
+      }
+
+      if (!mappings[iconName]) {
+        mappings[iconName] = {};
+      }
+
+      const raw = fs.readFileSync(path.join(weightDir, file), "utf-8");
+      mappings[iconName][weight] = stripSvgWrapper(raw);
+    }
+  }
+
+  return mappings;
+}
+
+export function generateAllComponents(
+  mappings: IconMappings,
+  componentsPath: string
+): string[] {
   const componentNames: string[] = [];
   let passes = 0;
   let fails = 0;
 
-  // Clean and recreate output directory
-  if (fs.existsSync(COMPONENTS_PATH)) {
-    fs.rmSync(COMPONENTS_PATH, { recursive: true });
+  if (fs.existsSync(componentsPath)) {
+    fs.rmSync(componentsPath, { recursive: true });
   }
-  fs.mkdirSync(COMPONENTS_PATH, { recursive: true });
+  fs.mkdirSync(componentsPath, { recursive: true });
 
   for (const [iconName, weights] of Object.entries(mappings)) {
     for (const [weight, svgContent] of Object.entries(weights)) {
@@ -158,7 +146,7 @@ function generateAllComponents(mappings: IconMappings): string[] {
       const componentName = `Ph${pascalName}${weightSuffix}`;
 
       const content = generateComponent(iconName, weight, svgContent);
-      const filePath = path.join(COMPONENTS_PATH, `${componentName}.vue`);
+      const filePath = path.join(componentsPath, `${componentName}.vue`);
 
       try {
         fs.writeFileSync(filePath, content, { flag: "w" });
@@ -180,25 +168,10 @@ function generateAllComponents(mappings: IconMappings): string[] {
   return componentNames.sort();
 }
 
-// --- Step 5: Generate index.ts with named exports and aliases ---
-
-async function generateIndex(mappings: IconMappings): Promise<void> {
-  // Load icon metadata for aliases
-  let aliasMap = new Map<string, { name: string; pascal_name: string }>();
-  try {
-    const coreModule = await import("@phosphor-icons/core");
-    const icons = coreModule.icons || coreModule.default?.icons;
-    if (icons) {
-      for (const icon of icons) {
-        if ("alias" in icon && icon.alias) {
-          aliasMap.set(icon.name, icon.alias);
-        }
-      }
-    }
-  } catch {
-    console.warn("WARN: Could not load icon metadata for aliases");
-  }
-
+export function buildIndexContent(
+  mappings: IconMappings,
+  aliasMap: Map<string, { name: string; pascal_name: string }>
+): string {
   const imports: string[] = [];
   const exports: string[] = [];
 
@@ -219,7 +192,6 @@ async function generateIndex(mappings: IconMappings): Promise<void> {
       );
       exports.push(componentName);
 
-      // Handle aliases
       const alias = aliasMap.get(iconName);
       if (alias) {
         const aliasComponentName = `Ph${alias.pascal_name}${weightSuffix}`;
@@ -228,7 +200,7 @@ async function generateIndex(mappings: IconMappings): Promise<void> {
     }
   }
 
-  const indexContent = `\
+  return `\
 /* GENERATED FILE */
 
 ${imports.join("\n")}
@@ -237,33 +209,81 @@ export {
   ${exports.join(",\n  ")}
 };
 `;
+}
 
-  // Ensure src directory exists
-  const srcDir = path.dirname(INDEX_PATH);
+export async function loadAliasMap(): Promise<
+  Map<string, { name: string; pascal_name: string }>
+> {
+  const aliasMap = new Map<string, { name: string; pascal_name: string }>();
+  try {
+    const coreModule = await import("@phosphor-icons/core");
+    const icons = coreModule.icons || coreModule.default?.icons;
+    if (icons) {
+      for (const icon of icons) {
+        if ("alias" in icon && icon.alias) {
+          aliasMap.set(icon.name, icon.alias);
+        }
+      }
+    }
+  } catch {
+    console.warn("WARN: Could not load icon metadata for aliases");
+  }
+  return aliasMap;
+}
+
+export async function generateIndex(
+  mappings: IconMappings,
+  indexPath: string
+): Promise<void> {
+  const aliasMap = await loadAliasMap();
+  const indexContent = buildIndexContent(mappings, aliasMap);
+
+  const srcDir = path.dirname(indexPath);
   if (!fs.existsSync(srcDir)) {
     fs.mkdirSync(srcDir, { recursive: true });
   }
 
-  fs.writeFileSync(INDEX_PATH, indexContent, { flag: "w" });
+  fs.writeFileSync(indexPath, indexContent, { flag: "w" });
   console.log("Index file generated successfully");
 }
 
 // --- Main execution ---
 
-console.log("Reading SVG assets from @phosphor-icons/core...");
-const mappings = readAllIcons();
+const isMain =
+  process.argv[1] && path.resolve(process.argv[1]).includes("assemble");
 
-console.log("Generating Vue components...");
-generateAllComponents(mappings);
+if (isMain) {
+  const require = createRequire(import.meta.url);
+  const coreMainPath = require.resolve("@phosphor-icons/core");
+  const coreDir = path.resolve(path.dirname(coreMainPath), "..");
+  const assetsPath = path.join(coreDir, "assets");
 
-console.log("Generating index file...");
-await generateIndex(mappings);
+  const __dirname = path.dirname(new URL(import.meta.url).pathname);
+  const componentsPath = path.join(__dirname, "../src/icons");
+  const indexPath = path.join(__dirname, "../src/index.ts");
 
-const totalIcons = Object.keys(mappings).length;
-const totalComponents = Object.values(mappings).reduce(
-  (sum, w) => sum + Object.keys(w).length,
-  0
-);
-console.log(
-  `Done: ${totalIcons} icons x ${WEIGHTS.length} weights = ${totalComponents} components`
-);
+  if (!fs.existsSync(assetsPath)) {
+    console.error(
+      `FAIL: Could not find @phosphor-icons/core assets at ${assetsPath}`
+    );
+    process.exit(1);
+  }
+
+  console.log("Reading SVG assets from @phosphor-icons/core...");
+  const mappings = readAllIcons(assetsPath);
+
+  console.log("Generating Vue components...");
+  generateAllComponents(mappings, componentsPath);
+
+  console.log("Generating index file...");
+  await generateIndex(mappings, indexPath);
+
+  const totalIcons = Object.keys(mappings).length;
+  const totalComponents = Object.values(mappings).reduce(
+    (sum, w) => sum + Object.keys(w).length,
+    0
+  );
+  console.log(
+    `Done: ${totalIcons} icons x ${WEIGHTS.length} weights = ${totalComponents} components`
+  );
+}

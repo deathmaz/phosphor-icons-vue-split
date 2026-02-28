@@ -24,7 +24,9 @@
     "build": "rimraf dist && npm run assemble && vite build && npm run generate-types",
     "lint": "oxlint",
     "typecheck": "tsc --noEmit -p tsconfig.check.json",
-    "check": "npm run typecheck && npm run lint"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm run lint && npm run test"
   },
   "peerDependencies": {
     "vue": ">=3.2.39"
@@ -33,11 +35,14 @@
     "@phosphor-icons/core": "^2.1.1",
     "@types/node": "^25.3.2",
     "@vitejs/plugin-vue": "^6.0.0",
+    "@vue/test-utils": "^2.4.6",
+    "happy-dom": "^20.7.0",
     "oxlint": "^1.50.0",
     "rimraf": "^5.0.1",
     "tsx": "^4.21.0",
     "typescript": "^5.7.0",
     "vite": "^6.0.0",
+    "vitest": "^4.0.18",
     "vue": "^3.5.0"
   }
 }
