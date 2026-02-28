@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Phosphor Icons for Vue 3 with per-weight components for optimal tree-shaking",
   "license": "MIT",
   "sideEffects": false,
