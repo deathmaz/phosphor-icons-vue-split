@@ -1,0 +1,7 @@
+{
+  "plugins": ["typescript"],
+  "categories": {
+    "correctness": "error"
+  },
+  "ignorePatterns": ["src/icons", "src/index.ts", "dist"]
+}

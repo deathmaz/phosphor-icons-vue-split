@@ -182,10 +182,7 @@ function generateAllComponents(mappings: IconMappings): string[] {
 
 // --- Step 5: Generate index.ts with named exports and aliases ---
 
-async function generateIndex(
-  mappings: IconMappings,
-  componentNames: string[]
-): Promise<void> {
+async function generateIndex(mappings: IconMappings): Promise<void> {
   // Load icon metadata for aliases
   let aliasMap = new Map<string, { name: string; pascal_name: string }>();
   try {
@@ -193,7 +190,7 @@ async function generateIndex(
     const icons = coreModule.icons || coreModule.default?.icons;
     if (icons) {
       for (const icon of icons) {
-        if (icon.alias) {
+        if ("alias" in icon && icon.alias) {
           aliasMap.set(icon.name, icon.alias);
         }
       }
@@ -257,10 +254,10 @@ console.log("Reading SVG assets from @phosphor-icons/core...");
 const mappings = readAllIcons();
 
 console.log("Generating Vue components...");
-const componentNames = generateAllComponents(mappings);
+generateAllComponents(mappings);
 
 console.log("Generating index file...");
-await generateIndex(mappings, componentNames);
+await generateIndex(mappings);
 
 const totalIcons = Object.keys(mappings).length;
 const totalComponents = Object.values(mappings).reduce(

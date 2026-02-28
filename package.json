@@ -21,14 +21,19 @@
   "scripts": {
     "assemble": "tsx bin/assemble.ts",
     "generate-types": "tsx bin/generate-types.ts",
-    "build": "rimraf dist && npm run assemble && vite build && npm run generate-types"
+    "build": "rimraf dist && npm run assemble && vite build && npm run generate-types",
+    "lint": "oxlint",
+    "typecheck": "tsc --noEmit -p tsconfig.check.json",
+    "check": "npm run typecheck && npm run lint"
   },
   "peerDependencies": {
     "vue": ">=3.2.39"
   },
   "devDependencies": {
     "@phosphor-icons/core": "^2.1.1",
+    "@types/node": "^25.3.2",
     "@vitejs/plugin-vue": "^6.0.0",
+    "oxlint": "^1.50.0",
     "rimraf": "^5.0.1",
     "tsx": "^4.21.0",
     "typescript": "^5.7.0",
