@@ -129,7 +129,7 @@ The library uses `sideEffects: false` and Vite's `preserveModules` output, so bu
 
 ### Prerequisites
 
-- Node.js >= 18
+- Node.js >= 20
 - npm
 
 ### Setup
@@ -148,7 +148,7 @@ npm install
 | `npm run test:watch`| Run tests in watch mode                       |
 | `npm run lint`      | Lint with oxlint                              |
 | `npm run typecheck` | Type-check with TypeScript                    |
-| `npm run check`     | Run typecheck + lint + test                   |
+| `npm run check`     | Run typecheck + lint + build + test            |
 
 ### How it works
 

@@ -2,8 +2,25 @@
 import { mount } from "@vue/test-utils";
 import { h } from "vue";
 import { describe, expect, it } from "vitest";
-import PhHeartRegular from "../src/icons/PhHeartRegular.vue";
-import PhHeartDuotone from "../src/icons/PhHeartDuotone.vue";
+// @ts-expect-error importing compiled output for runtime testing
+import * as allExports from "../dist/index.mjs";
+
+const { PhHeartRegular, PhHeartDuotone } = allExports;
+
+describe("compiled component smoke tests", () => {
+  const components = Object.entries(allExports);
+
+  it("exports at least 9000 components", () => {
+    expect(components.length).toBeGreaterThanOrEqual(9000);
+  });
+
+  it("every exported component renders an svg", () => {
+    for (const [name, Component] of components) {
+      const wrapper = mount(Component);
+      expect(wrapper.element.tagName, `${name} should render svg`).toBe("svg");
+    }
+  });
+});
 
 describe("generated Vue components", () => {
   describe("default rendering", () => {
