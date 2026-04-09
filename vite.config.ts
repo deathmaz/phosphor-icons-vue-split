@@ -3,6 +3,13 @@ import { resolve } from "path";
 import type { Plugin } from "vite";
 import { defineConfig } from "vite";
 
+/**
+ * @vitejs/plugin-vue transforms each .vue SFC into virtual sub-modules
+ * (e.g. Component.vue?vue&type=script&setup=true&lang.ts). With
+ * preserveModules: true, Rolldown emits these as separate chunk files,
+ * doubling the dist file count (~9k extra files). This plugin inlines
+ * each chunk back into its parent component file during generateBundle.
+ */
 function mergeVueSfcChunks(): Plugin {
   return {
     name: "merge-vue-sfc-chunks",
